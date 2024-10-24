@@ -1,8 +1,11 @@
+package commands;
+import interfaces.Command;
 import java.io.File;
 
-public class PwdCommand {
+public class PwdCommand implements Command {
+    @Override
     public void execute(String[] args) {
-        String currentDir = System.getProperty("user.dir");
-        System.out.println(currentDir);
+        String currentDirectory = System.getProperty("user.dir");
+        System.out.println(currentDirectory);
     }
 }
