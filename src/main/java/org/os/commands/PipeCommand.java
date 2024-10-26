@@ -1,10 +1,11 @@
-package commands;
-import interfaces.Command;
+package org.os.commands;
+import org.os.interfaces.Command;
 import java.io.File;
 
-public class CdCommand implements Command {
+
+public class PipeCommand implements Command{
     @Override
-    public void execute(String[] args) {
+    public void execute(String[] args){
         if (args.length == 0) {
             System.out.println("Error: Please specify a directory to change into.");
             return;
