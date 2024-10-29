@@ -3,9 +3,10 @@ import org.os.interfaces.Command;
 
 
 public class PwdCommand implements Command {
+    String currentDirectory;
     @Override
     public void execute(String[] args){
-        String currentDirectory = System.getProperty("user.dir");
-        System.out.println(currentDirectory);
+        this.currentDirectory = System.getProperty("user.dir");
+        System.out.println(this.currentDirectory);
     }
 }

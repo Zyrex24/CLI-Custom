@@ -1,9 +1,11 @@
 package org.os.commands;
-import org.os.interfaces.Command;
+import org.os.interfaces.*;
 
 public class ExitCommand implements Command {
+
+
     @Override
-    public void execute(String[] args){
+    public void execute(String[] args) {
         System.exit(0);
     }
 }

@@ -19,10 +19,11 @@ public class RmCommand implements Command{
             File file = new File(currentDir, arg);
 
             if (file.exists()) {
-                if (file.delete()) {
-                    System.out.println("Deleted: " + file.getName());
-                } else {
-                    System.out.println("Error: Could not delete " + file.getName());
+                try {
+                    Files.delete(file.toPath());
+                    System.out.println("File deleted: " + file.getName());
+                } catch (IOException e) {
+                    System.out.println("Error: Unable to delete file - "+ e.getMessage());
                 }
             } else {
                 System.out.println("File not found: " + file.getName());

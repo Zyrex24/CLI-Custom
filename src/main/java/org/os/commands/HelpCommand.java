@@ -2,17 +2,19 @@ package org.os.commands;
 import org.os.interfaces.Command;
 
 public class HelpCommand implements Command {
+    public String helpMessage;
+
     @Override
     public void execute(String[] args) {
-        System.out.println("Available commands:");
-        System.out.println("pwd - Print working directory");
-        System.out.println("cd - Change directory");
-        System.out.println("ls - List directory contents");
-        System.out.println("mkdir - Make directory");
-        System.out.println("rmdir - Remove directory");
-        System.out.println("touch - Create file");
-        System.out.println("mv - Move file");
-        System.out.println("rm - Remove file");
-        System.out.println("cat - Concatenate files");
+        this.helpMessage = "Available commands:\n" +
+                "cd <directory> - Change the current working directory\n" +
+                "ls - List the contents of the current directory\n" +
+                "mkdir <directory> - Create a new directory\n" +
+                "rm <file> - Delete a file\n" +
+                "rm -r <directory> - Delete a directory and all of its contents\n" +
+                "pwd - Print the current working directory\n" +
+                "exit - Exit the shell\n" +
+                "help - Display this help message";
+        System.out.println(this.helpMessage);
     }
 }
