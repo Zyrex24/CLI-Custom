@@ -1,76 +1,118 @@
 package org.os.commands;
 import org.os.interfaces.Command;
-import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 
 public class PipeCommand implements Command {
-    private static final Logger logger = Logger.getLogger(PipeCommand.class.getName());
+
+    private final Command firstCommand;
+    private final Command secondCommand;
+
+    public PipeCommand(Command firstCommand, Command secondCommand) {
+        this.firstCommand = firstCommand;
+        this.secondCommand = secondCommand;
+    }
 
     @Override
     public void execute(String[] args) {
+        // Capture the output of the first command
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        PrintStream originalOut = System.out;
+        System.setOut(new PrintStream(outputStream));
+
         try {
-            String result = executePipeline(args);
-            System.out.println(result);    // Print the final output of the pipeline
-        } catch (Exception e) {
-            logger.log(Level.SEVERE, "Exception occurred while executing pipeline: ", e);
-        }
-    }
-
-    private String executePipeline(String[] commands) throws IOException, InterruptedException {
-        List<Process> processes = new ArrayList<>();
-        ProcessBuilder builder;
-        Process previousProcess = null;
-
-        for (String command : commands) {
-            builder = new ProcessBuilder(command.split(" "));
-
-            if (previousProcess != null) {
-                builder.redirectInput(ProcessBuilder.Redirect.PIPE);
-            }
-
-            Process process = builder.start();
-
-            // Only redirect if previousProcess exists
-            if (previousProcess != null) {
-                redirectProcessOutput(previousProcess.getInputStream(), process.getOutputStream());
-            }
-
-            processes.add(process);
-            previousProcess = process;
+            firstCommand.execute(args);  // Execute the first command
+        } finally {
+            System.setOut(originalOut);  // Restore System.out
         }
 
-        // Collect final output from last process in pipeline
-        StringBuilder result = new StringBuilder();
-        if (previousProcess != null) {  // Checking to avoid NullPointerException
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(previousProcess.getInputStream()))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    result.append(line).append("\n");
-                }
-            }
-        }
-
-        // Close all processes
-        for (Process process : processes) {
-            process.waitFor();
-            process.destroy();
-        }
-
-        return result.toString().trim();
-    }
-
-    private void redirectProcessOutput(InputStream input, OutputStream output) throws IOException {
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(input));
-             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(output))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                writer.write(line);
-                writer.newLine();
-            }
-            writer.flush();
+        // Capture the output as a single argument without a prefix
+        String firstCommandOutput = outputStream.toString();
+        if (!firstCommandOutput.isEmpty()) {
+            // Send captured content directly
+            secondCommand.execute(new String[]{firstCommandOutput});
+        } else {
+            System.out.println("Error: No output to pipe.");
         }
     }
 }
+
+
+
+
+//package org.os.commands;
+//import org.os.interfaces.Command;
+//import java.io.*;
+//import java.util.ArrayList;
+//import java.util.List;
+//import java.util.logging.Level;
+//import java.util.logging.Logger;
+//
+//public class PipeCommand implements Command {
+//    private static final Logger logger = Logger.getLogger(PipeCommand.class.getName());
+//
+//    @Override
+//    public void execute(String[] args) {
+//        try {
+//            String result = executePipeline(args);
+//            System.out.println(result);    // Print the final output of the pipeline
+//        } catch (Exception e) {
+//            logger.log(Level.SEVERE, "Exception occurred while executing pipeline: ", e);
+//        }
+//    }
+//
+//    private String executePipeline(String[] commands) throws IOException, InterruptedException {
+//        List<Process> processes = new ArrayList<>();
+//        ProcessBuilder builder;
+//        Process previousProcess = null;
+//
+//        for (String command : commands) {
+//            builder = new ProcessBuilder(command.split(" "));
+//
+//            if (previousProcess != null) {
+//                builder.redirectInput(ProcessBuilder.Redirect.PIPE);
+//            }
+//
+//            Process process = builder.start();
+//
+//            // Only redirect if previousProcess exists
+//            if (previousProcess != null) {
+//                redirectProcessOutput(previousProcess.getInputStream(), process.getOutputStream());
+//            }
+//
+//            processes.add(process);
+//            previousProcess = process;
+//        }
+//
+//        // Collect final output from last process in pipeline
+//        StringBuilder result = new StringBuilder();
+//        if (previousProcess != null) {  // Checking to avoid NullPointerException
+//            try (BufferedReader reader = new BufferedReader(new InputStreamReader(previousProcess.getInputStream()))) {
+//                String line;
+//                while ((line = reader.readLine()) != null) {
+//                    result.append(line).append("\n");
+//                }
+//            }
+//        }
+//
+//        // Close all processes
+//        for (Process process : processes) {
+//            process.waitFor();
+//            process.destroy();
+//        }
+//
+//        return result.toString().trim();
+//    }
+//
+//    private void redirectProcessOutput(InputStream input, OutputStream output) throws IOException {
+//        try (BufferedReader reader = new BufferedReader(new InputStreamReader(input));
+//             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(output))) {
+//            String line;
+//            while ((line = reader.readLine()) != null) {
+//                writer.write(line);
+//                writer.newLine();
+//            }
+//            writer.flush();
+//        }
+//    }
+//}

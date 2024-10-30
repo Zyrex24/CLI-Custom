@@ -56,99 +56,93 @@ public class RedirectionCommandTest {
     @AfterEach
     public void cleanup() {
         RmCommand rmCommand = new RmCommand();
-        rmCommand.execute(new String[]{outputFile.getName()});
+        if(outputFile.exists()) {
+            rmCommand.execute(new String[]{outputFileName});
+        }
+
     }
 
     @Test
-    public void testOverwriteWithSingleLineEcho() throws IOException {
-        RedirectionCommand command = new RedirectionCommand(false);  // Overwrite mode
-        command.execute(new String[]{"Hello, World!", outputFileName});
+    public void test_write_with_cat_ls_pwd() throws IOException {
 
-        String content = Files.readString(outputFile.toPath()).trim();
-        assertEquals("Hello, World!", content);
-    }
+        // Setup: Create test files using TouchCommand
+        TouchCommand touchCommand = new TouchCommand();
+        touchCommand.execute(new String[]{"test_for_ls.txt"});
+        touchCommand.execute(new String[]{"test_for_pwd.txt"});
+        touchCommand.execute(new String[]{"test_for_cat.txt"});
 
-    @Test
-    public void testAppendWithSingleLineEcho() throws IOException {
-        RedirectionCommand command = new RedirectionCommand(false);  // Overwrite mode
-        command.execute(new String[]{"First line", outputFileName});
+        // Test CatCommand with overwrite redirection
+        CatCommand catCommand = new CatCommand();
+        catCommand.execute(new String[]{"test_touch.txt", ">", "test_for_cat.txt"});
+        String expectedCatContent = Files.readString(new File("test_touch.txt").toPath()).trim();
+        String actualCatContent = Files.readString(new File("test_for_cat.txt").toPath()).trim();
+        assertEquals(expectedCatContent, actualCatContent);
 
-        RedirectionCommand appendCommand = new RedirectionCommand(true);  // Append mode
-        appendCommand.execute(new String[]{" Second line", outputFileName});
-
-        String content = Files.readString(outputFile.toPath()).trim();
-        assertEquals("First line Second line", content);
-    }
-
-    @Test
-    public void testOverwriteWithLsCommand() throws IOException {
+        // Test LsCommand with overwrite redirection
         LsCommand lsCommand = new LsCommand();
-        ArrayList<String> names = new ArrayList<>();
-        lsCommand.execute(new String[]{});
-        names = lsCommand.fileNames;
+        lsCommand.execute(new String[]{">", "test_for_ls.txt"});
+        String expectedLsContent = String.join(System.lineSeparator(), lsCommand.fileNames).trim();
+        String actualLsContent = Files.readString(new File("test_for_ls.txt").toPath()).trim();
+        assertEquals(expectedLsContent, actualLsContent);
+
+        // Test PwdCommand with overwrite redirection
+        PwdCommand pwdCommand = new PwdCommand();
+        pwdCommand.execute(new String[]{">", "test_for_pwd.txt"});
+        String expectedPwdContent = pwdCommand.currentDirectory.trim();
+        String actualPwdContent = Files.readString(new File("test_for_pwd.txt").toPath()).trim();
+        assertEquals(expectedPwdContent, actualPwdContent);
+
+        // Cleanup: Remove the test files
         RmCommand rmCommand = new RmCommand();
-        rmCommand.execute(new String[]{outputFileName});
-        RedirectionCommand command = new RedirectionCommand(false);
-        command.execute(new String[]{names.toString(), outputFileName});
-        String content = Files.readString(outputFile.toPath()).trim();
-        assertEquals(names.toString(), content);
+        rmCommand.execute(new String[]{"test_for_cat.txt"});
+        rmCommand.execute(new String[]{"test_for_ls.txt"});
+        rmCommand.execute(new String[]{"test_for_pwd.txt"});
     }
 
+
     @Test
-    public void testAppendWithLsCommand() throws IOException {
+    public void test_append_with_cat_ls_pwd() throws IOException {
+
+        // Setup: Create test files using TouchCommand
+        TouchCommand touchCommand = new TouchCommand();
+        touchCommand.execute(new String[]{"test_for_ls.txt"});
+        touchCommand.execute(new String[]{"test_for_pwd.txt"});
+        touchCommand.execute(new String[]{"test_for_cat.txt"});
+
+        // Test CatCommand with append redirection
+        CatCommand catCommand = new CatCommand();
+        catCommand.execute(new String[]{"test_touch.txt", ">>", "test_for_cat.txt"});
+        String expectedCatContent = Files.readString(new File("test_touch.txt").toPath()).trim();
+        String actualCatContent = Files.readString(new File("test_for_cat.txt").toPath()).trim();
+        assertTrue(actualCatContent.endsWith(expectedCatContent)); // Verify appended content
+
+        // Test LsCommand with append redirection
         LsCommand lsCommand = new LsCommand();
-        ArrayList<String> names = new ArrayList<>();
-        lsCommand.execute(new String[]{});
-        names = lsCommand.fileNames;
-        String fileName = "test_touch.txt";
-        File file = new File(fileName);
-        assert(file.length() >0);
-        String old_content = Files.readString(file.toPath()).trim();
-        RedirectionCommand command = new RedirectionCommand(true);
-        command.execute(new String[]{names.toString(), fileName});
-        String content = Files.readString(file.toPath()).trim();
-        assertEquals(old_content + names.toString(), content);
+        lsCommand.execute(new String[]{">>", "test_for_ls.txt"});
+        String expectedLsContent = String.join(System.lineSeparator(), lsCommand.fileNames).trim();
+        String actualLsContent = Files.readString(new File("test_for_ls.txt").toPath()).trim();
+        assertTrue(actualLsContent.endsWith(expectedLsContent)); // Verify appended content
+
+        // Test PwdCommand with append redirection
+        PwdCommand pwdCommand = new PwdCommand();
+        pwdCommand.execute(new String[]{">>", "test_for_pwd.txt"});
+        String expectedPwdContent = pwdCommand.currentDirectory.trim();
+        String actualPwdContent = Files.readString(new File("test_for_pwd.txt").toPath()).trim();
+        assertTrue(actualPwdContent.endsWith(expectedPwdContent)); // Verify appended content
+
+        // Cleanup: Remove the test files
+        RmCommand rmCommand = new RmCommand();
+        rmCommand.execute(new String[]{"test_for_cat.txt"});
+        rmCommand.execute(new String[]{"test_for_ls.txt"});
+        rmCommand.execute(new String[]{"test_for_pwd.txt"});
     }
+
 
     @Test
-    public void testMultipleAppends() throws IOException {
-        RedirectionCommand command = new RedirectionCommand(true);  // Append mode
-
-        command.execute(new String[]{"Line 1", outputFileName});
-        command.execute(new String[]{" Line 2", outputFileName});
-        command.execute(new String[]{" Line 3", outputFileName});
-
-        String content = Files.readString(outputFile.toPath()).trim();
-        assertEquals("Line 1 Line 2 Line 3", content);
+    public void test_append_non_existing_file() throws IOException {
+        LsCommand lsCommand = new LsCommand();
+        assertFalse(new File ("i_dont_exist.txt").exists());
+        lsCommand.execute(new String[]{">>", "i_dont_exist.txt"});
+        assertFalse(new File ("i_dont_exist.txt").exists());
     }
-
-    @Test
-    public void testOverwriteNonExistentFile() throws IOException {
-        RedirectionCommand command = new RedirectionCommand(false);  // Overwrite mode
-        command.execute(new String[]{"Creating new file content", outputFileName});
-
-        assertTrue(outputFile.exists(), "Output file should be created");
-        String content = new String(Files.readAllBytes(outputFile.toPath()));
-        assertEquals("Creating new file content", content);
-    }
-
-    @Test
-    public void testAppendNonExistentFile() throws IOException {
-        RedirectionCommand command = new RedirectionCommand(true);  // Append mode
-        command.execute(new String[]{"First entry in new file", outputFileName});
-
-        assertTrue(outputFile.exists(), "Output file should be created");
-        String content = Files.readString(outputFile.toPath()).trim();
-        assertEquals("First entry in new file", content);
-    }
-
-//    @Test
-//    public void testInvalidCommandWithRedirection() throws IOException {
-//        RedirectionCommand command = new RedirectionCommand(false);  // Overwrite mode
-//        command.execute(new String[]{"invalidCommand", "teeest.txt"});
-//        File nonExistentFile = new File("teeest.txt");
-//
-//        assertFalse(nonExistentFile.exists(), "Output file should not be created");
-//
-//    }
 }

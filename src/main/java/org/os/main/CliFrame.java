@@ -21,43 +21,49 @@ public class CliFrame {
             String input = userInput.nextLine().trim();
             if (input.isEmpty()) continue;
 
-            // Check for redirection operators
-            boolean append = input.contains(">>");
-            boolean overwrite = input.contains(">");
-            String filePath = null;
-            if (append || overwrite) {
-                String[] parts = append ? input.split(">>") : input.split(">");
-                input = parts[0].trim();
-                filePath = parts[1].trim();
+            // Detect and handle piping if present
+            if (input.contains("|")) {
+                handlePiping(input);
+                continue;
             }
 
-            // Parse the command and arguments
+            // Detect and parse redirection arguments (>, >>)
+            boolean append = input.contains(">>");
+            boolean overwrite = input.contains(">") && !append;
+            String redirectFile = null;
+
+            if (overwrite || append) {
+                String[] commandAndArgs = append ? input.split(">>") : input.split(">");
+                input = commandAndArgs[0].trim();  // Command part
+                redirectFile = commandAndArgs[1].trim();  // File path for redirection
+            }
+
+            // Execute command
             String[][] parsedInput = ChangeInput(input);
             String command = String.join(" ", parsedInput[0]);
             String[] arguments = parsedInput[1];
 
-            // Execute command and capture output if redirection is specified
             if (commandRegistry.containsKey(command)) {
-                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                PrintStream printStream = new PrintStream(outputStream);
-                PrintStream originalOut = System.out;
-                try {
-                    System.setOut(printStream);  // Temporarily redirect System.out
-                    commandRegistry.get(command).execute(arguments);
-                    System.out.flush();
-                    String output = outputStream.toString();  // Capture the command output
+                Command cmdInstance = commandRegistry.get(command);
 
-                    // Write output to file if redirection is specified
-                    if (filePath != null) {
-                        writeToFile(output, filePath, append);
-                        System.setOut(originalOut);
-                        System.out.println("Content written to " + filePath);
-                    } else {
-                        System.setOut(originalOut);
-                        System.out.print(output);  // Print output to console if no redirection
+                // Redirect output if a redirect file is specified
+                if (redirectFile != null) {
+                    // Redirect output to file instead of console
+                    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                    PrintStream originalOut = System.out;
+                    System.setOut(new PrintStream(outputStream));  // Capture command output
+
+                    try {
+                        cmdInstance.execute(arguments);
+                    } finally {
+                        System.setOut(originalOut);  // Restore System.out
                     }
-                } finally {
-                    System.setOut(originalOut);  // Reset System.out
+
+                    String commandOutput = outputStream.toString();
+                    writeToFile(commandOutput, redirectFile, append);
+                } else {
+                    // No redirection; execute and print directly
+                    cmdInstance.execute(arguments);
                 }
             } else {
                 System.out.println("Error: This command is invalid.");
@@ -92,7 +98,36 @@ public class CliFrame {
         return new String[][]{{command}, arguments};
     }
 
-    private static void registerCommands() {
+    private static void handlePiping(String input) {
+        String[] pipedCommands = input.split("\\|");
+        if (pipedCommands.length != 2) {
+            System.out.println("Error: Only single piping (command1 | command2) is supported.");
+            return;
+        }
+
+        String firstCommandInput = pipedCommands[0].trim();
+        String secondCommandInput = pipedCommands[1].trim();
+
+        // Parse the first and second commands
+        String[][] firstParsedInput = ChangeInput(firstCommandInput);
+        String[][] secondParsedInput = ChangeInput(secondCommandInput);
+
+        String firstCommand = String.join(" ", firstParsedInput[0]);
+        String secondCommand = String.join(" ", secondParsedInput[0]);
+
+        if (commandRegistry.containsKey(firstCommand) && commandRegistry.containsKey(secondCommand)) {
+            Command firstCmdInstance = commandRegistry.get(firstCommand);
+            Command secondCmdInstance = commandRegistry.get(secondCommand);
+
+            // Execute PipeCommand with the first and second commands
+            PipeCommand pipeCommand = new PipeCommand(firstCmdInstance, secondCmdInstance);
+            pipeCommand.execute(firstParsedInput[1]);  // Pass arguments of the first command to execute
+        } else {
+            System.out.println("Error: One or both commands are invalid for piping.");
+        }
+    }
+
+    public static void registerCommands() {
         commandRegistry.put("pwd", new PwdCommand());
         commandRegistry.put("cd", new CdCommand());
         commandRegistry.put("ls", new LsCommand());
@@ -103,8 +138,6 @@ public class CliFrame {
         commandRegistry.put("rm", new RmCommand());
         commandRegistry.put("rm -r", new RmRecursiveCommand());
         commandRegistry.put("cat", new CatCommand());
-        commandRegistry.put(">", new RedirectionCommand(false));
-        commandRegistry.put(">>", new RedirectionCommand(true));
         commandRegistry.put("exit", new ExitCommand());
         commandRegistry.put("help", new HelpCommand());
     }

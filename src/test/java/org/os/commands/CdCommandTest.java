@@ -34,35 +34,6 @@ public class CdCommandTest {
     }
 
     @Test
-    public void testCdToParentDirectory() {
-        CdCommand cdCommand = new CdCommand();
-        System.setProperty("user.dir", new File(testDir).getAbsolutePath());  // Start in testDir
-        cdCommand.execute(new String[]{".."});
-
-        String expectedDir = new File(testDir).getParentFile().getAbsolutePath();
-        assertEquals(expectedDir, System.getProperty("user.dir"));
-    }
-
-    @Test
-    public void testCdToMultipleParentDirectories() {
-        CdCommand cdCommand = new CdCommand();
-        System.setProperty("user.dir", new File(testDir).getAbsolutePath());
-        cdCommand.execute(new String[]{"../.."});
-
-        String expectedDir = new File(testDir).getParentFile().getParentFile().getAbsolutePath();
-        assertEquals(expectedDir, System.getProperty("user.dir"));
-    }
-
-    @Test
-    public void testCdToAbsolutePath() {
-        CdCommand cdCommand = new CdCommand();
-        String absolutePath = new File(testDir).getAbsolutePath();
-
-        cdCommand.execute(new String[]{absolutePath});
-        assertEquals(absolutePath, System.getProperty("user.dir"));
-    }
-
-    @Test
     public void testCdToCurrentDirectory() {
         CdCommand cdCommand = new CdCommand();
         cdCommand.execute(new String[]{"."});

@@ -29,24 +29,3 @@ public class TouchCommand implements Command{
         }
     }
 }
-
-
-
-
-
-
-//if (args.length == 0) {
-//        System.out.println("Error: Please specify a file to create.");
-//            return;
-//                    }
-//
-//File newFile = new File(args[0]);
-//        try {
-//                if (newFile.createNewFile()) {
-//
-//        } else {
-//        System.out.println("Error: File already exists.");
-//            }
-//                    } catch (Exception e) {
-//        System.out.println("Error: An error occurred.");
-//        }
